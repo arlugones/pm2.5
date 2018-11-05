@@ -1,0 +1,56 @@
+---
+title: "Quito PM2.5 data files tidying 2nd part"
+author: "Alain Rodriguez"
+date: "25 de octubre de 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Loading libraries
+```{r loading_libraries, message=FALSE}
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(dplyr)
+```
+
+We go now for the **2008 - 2016** period file, as it has a very different format from that of previous years.
+
+## 2. Loading data files
+```{r loading_data, warning=FALSE}
+pm25_2008_2016<- read_xlsx('2_PM25_2008_2016.xlsx', col_names = TRUE, skip = 1)
+head(pm25_2008_2016, 5)
+```
+
+It appears as a very messy file with observations as variables and viceversa. Let's try to tidy this a bit
+```{r}
+pm25_2008_2016<- pm25_2008_2016 %>% mutate(FECHA = paste(`AÑO`, MES, DIA, sep = '-')) %>%
+        select(-c(MAGNITUD, `AÑO`, MES, DIA)) %>% gather(key = HORA, value = DATO, -c(ESTACION, FECHA))
+pm25_2008_2016
+        
+```
+We need to perform a few operations with the **FECHA** and **HORA** columns. Firstly, we're going to recode the **HORA** column as 'HORA 1' = 01:00:00, 'HORA 2' = 02:00:00 and so on till 'HORA 24' = 24:00:00
+We do this using gsub with regular expressions.
+```{r}
+pm25_2008_2016$HORA<- gsub("(HORA) (\\d+)", "\\2:00:00", pm25_2008_2016$HORA)
+```
+After that let's *unite* columns **FECHA** and **HORA** and *spread* the observations across the **ESTACION** columns.
+```{r}
+pm25_2008_2016 %<>% unite(FECHA, FECHA, HORA, sep = " ") %>% spread(key = ESTACION, value = DATO)
+```
+Finally we turn **FECHA** column into a real date-time column
+```{r}
+pm25_2008_2016$FECHA<- parse_date_time(pm25_2008_2016$FECHA, orders = 'ymd HMS')
+```
+Let's take a look at the results
+```{r}
+pm25_2008_2016 %>% arrange(FECHA)
+```
+```{r plotting_2, echo = FALSE}
+pm25_2008_2016 %>% filter(FECHA > as.Date('2008-01-01') & FECHA < as.Date('2008-01-31')) %>% ggplot(aes(FECHA, CENTRO)) + geom_col() + scale_x_datetime(date_labels = '%b-%Y')
+```
+```
+

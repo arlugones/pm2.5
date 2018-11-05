@@ -1,0 +1,40 @@
+---
+title: "Quito PM2.5 data files tidying 3rd part"
+author: "Alain Rodriguez"
+date: "29 de octubre de 2018"
+output: html_document
+---
+
+To complete the tidying process of Quito PM2.5 data files we just have to make a few more steps on observations from August 2016 till June 2018.
+## 1. Loading libraries
+```{r loading_libraries, message=FALSE}
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(dplyr)
+```
+
+```{r loading, warning=FALSE}
+pm25_ago2016_dic2016<- read_xls('3_PM2.5_Agost2016-Diciembre2016.xls', col_names = TRUE, col_types = c('date', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric'))
+pm25_ene2017_dic2017<- read_xls('4_PM2.5_Enero2017-Diciembre2017.xls', col_names = TRUE, col_types = c('date', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric'))
+pm25_ene2018_oct2018<- read_xls('5_PM2.5_Enero2018-Octubre2018.xls', col_names = TRUE, col_types = c('date', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric'))
+```
+
+The three tibbles are almost tidy. We only need to fix some mistakes on the **FECHA** column and drop the first two rows.
+```{r tidying}
+names(pm25_ago2016_dic2016)<- c('FECHA', 'Belisario', 'Carapungo', 'Centro', 'Cotocollao', 'El_Camal', 'Guamani', 'Los_Chillos', 'Tumbaco')
+names(pm25_ene2017_dic2017)<- c('FECHA', 'Belisario', 'El_Camal', 'Carapungo', 'Centro', 'Cotocollao', 'Guamani', 'Los_Chillos', 'San_Antonio', 'Tumbaco')
+names(pm25_ene2018_oct2018)<- c('FECHA', 'Belisario', 'Carapungo', 'Centro', 'Cotocollao', 'El_Camal', 'Guamani', 'Jipijapa', 'Los_Chillos', 'San_Antonio', 'Tumbaco')
+
+# Drop the 2nd and 3rd rows
+pm25_ago2016_dic2016<- pm25_ago2016_dic2016[-c(1,2),]
+pm25_ene2017_dic2017<- pm25_ene2017_dic2017[-c(1,2),]
+pm25_ene2018_oct2018<- pm25_ene2018_oct2018[-c(1,2),]
+```
+Let's take a final look
+```{r look}
+pm25_ene2017_dic2017
+```
+
+
+

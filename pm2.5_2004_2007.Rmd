@@ -1,0 +1,70 @@
+---
+title: "Quito PM2.5 data files tidying"
+author: "Alain Rodriguez"
+date: "25 de octubre de 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Particulate matter readings are often included in reports of air quality. Those particles, specially PM<sub>2.5</sub>, have been reported as Group 1 carcinogens by **IARC** and **WHO**^(1)^, therefore the importance of being informed about their levels.   
+Fine particles can come from various sources: power plants, motor vehicles, airplanes, residential wood burning, forest and grassland fires, agricultural burning, living vegetations, volcanic eruptions, dust storms and others.^(2)^
+Due to their extremely short size (2.5 micrometers) their absorption can result in respiratory diseases, vascular inflamation, hardening of arteries (leading to heart strokes) and cancer.   
+The Secretary of Environment (Secretaría del Ambiente) of the metropolitan district of Quito, Ecuador, produces daily reports from several weather stations located throughout the country. As new instruments have been developed and used in the measurement process, data file formats have varied across years.   
+The objective of this work is to tidy and merge each data file into a single one, to facilitate the analysis and predictions of researchers.   
+Files used here can be downloaded from [Secretaria del Ambiente](http://www.quitoambiente.gob.ec/ambiente/index.php/datos-horarios-historicos#particulas-menores-a-2-5-micrometros-pm2-5) website.
+
+## 1. Loading libraries
+```{r loading_libraries, message=FALSE}
+library(tidyverse)
+library(readxl)
+library(lubridate)
+```
+
+## 2. Loading data files
+```{r loading_data, warning=FALSE}
+pm25_2004_2007<- read_xlsx('1_PM25_2004-2007.xlsx', col_names = TRUE, skip = 1)
+pm25_2008_2016<- read_xlsx('2_PM25_2008_2016.xlsx', col_names = TRUE, skip = 1)
+pm25_ago2016_dic2016<- read_xls('3_PM2.5_Agost2016-Diciembre2016.xls', col_names = TRUE, col_types = c('date', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric', 'numeric'))
+```
+
+As it can be seen, data structure for temp file from 2004 to 2007 is very different from that of recent observations starting from August 2016, and also differs from that of 2008 - 2016.
+
+```{r headings}
+head(pm25_2004_2007, 5)
+head(pm25_2008_2016, 5)
+head(pm25_ago2016_dic2016, 5)
+```
+
+While data in the __pm25_2004_2007__ appears to be in *long* format, the others are in *wide* format. 
+As *wide* format is the latter it is assumed that this format will be preserved for later data files.
+
+## 3. Tidying 2004 - 2007 dataset
+Firstly we are going to drop the **MAGNITUD** column as it's redundant, and re-order the other columns in a more convenient way.
+```{r tidying_1}
+pm25_2004_2007 <- pm25_2004_2007 %>% select(FECHA, ESTACION, DATO)
+head(pm25_2004_2007)
+```
+
+Next thing, we *spread* the dataset using as key the **ESTACION** column and **DATO** as value.
+```{r spreading_1}
+pm25_2004_2007<- pm25_2004_2007 %>% spread(key = ESTACION, value = DATO)
+head(pm25_2004_2007)
+```
+
+We are almost done with the dataset from 2004 to 2007. Only thing we need is to parse the **FECHA** column into date-time format using functions from the *lubridate* package.
+
+```{r parsing_1}
+pm25_2004_2007$FECHA<- parse_date_time(pm25_2004_2007$FECHA, orders = 'ymd HMS') 
+head(pm25_2004_2007)
+```
+
+```{r plotting_1, echo=FALSE}
+pm25_2004_2007 %>% filter(FECHA > as.Date('2005-01-01') & FECHA < as.Date('2005-12-31')) %>% ggplot(aes(FECHA, CENTRO)) + geom_col() + scale_x_datetime(date_labels = '%b-%Y')
+```
+
+# References
+1. https://ehp.niehs.nih.gov/doi/10.1289/ehp/1408092
+2. https://en.wikipedia.org/wiki/Particulates
